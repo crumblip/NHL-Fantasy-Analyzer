@@ -22,10 +22,14 @@ Read this whole document before writing code. Build in the phases at the bottom,
 
 ## 1. Tech stack
 
-- **Backend:** Python 3.11+, `httpx` for requests, `pandas`/`polars` for data work, SQLite via SQLAlchemy (keep it swappable), FastAPI for the API.
-- **Frontend:** React + Vite + Tailwind. Keep it simple, fast and data-dense.
-- **Jobs:** a CLI (`typer`) with commands like `ingest-season`, `ingest-yesterday`, `build-derived`, `run-models`, `rebuild-all`.
-- **Config:** `config/league.yaml`, `config/model.yaml`.
+Same stack as my `stockwatcher` and `NFLhelper` apps. Everything is TypeScript on Node 22, run locally with `npm run dev` (http://localhost:3001).
+
+- **App:** Next.js 15 (App Router). API routes live under `app/api/`.
+- **UI:** Chakra UI v3 + `next-themes` (dark by default), `react-icons`. Theme tokens are in `lib/theme.ts` (`rink.*`). Keep it simple, fast and data-dense.
+- **Database:** SQLite via `better-sqlite3` at `data/nhl.db` (`lib/db.ts`).
+- **Jobs:** `tsx` scripts in `scripts/`, exposed as npm scripts like `ingest:season`, `ingest:yesterday`, `build:derived`, `run:models`, `rebuild:all`.
+- **Raw cache:** `data/cache/` (gitignored).
+- **Config:** `config/league.yaml`, `config/model.yaml` (loaded by `lib/config.ts`).
 
 ---
 

@@ -1,0 +1,29 @@
+league:
+  teams: 12            # TODO: set real league size
+  roster:              # TODO: set real roster slots
+    C: 2
+    LW: 2
+    RW: 2
+    D: 4
+    UTIL: 1
+    G: 2
+    BN: 4
+
+scoring:
+  skater:
+    G: 3.0
+    A: 2.0
+    PIM: 0.25          # per penalty minute
+    PPP: 0.75          # per power-play point, bonus on top of G/A
+    SHP: 1.5           # per short-handed point, bonus on top of G/A
+    HAT: 2.0           # per hat trick (3+ goals in a game)
+    SOG: 0.25
+    HIT: 0.3
+    BLK: 0.45
+    DEF: 0.5           # per point by a defenseman, bonus on top of G/A
+  goalie:
+    W: 3.25
+    GA: -0.5
+    SV: 0.15
+    SO: 4.0
+    OTL: 0.5
