@@ -1,0 +1,99 @@
+deployment:
+  # Trailing team games used to name the top center (1C) and the established top line before each game.
+  context_games: 10
+  # Minimum shared seconds for a detected unit to count (filters garbage-time groupings).
+  min_unit_seconds:
+    forward_line: 60
+    d_pair: 60
+    pp_unit: 20
+    pk_unit: 20
+
+  # Linemate quality uses an interim offense proxy until the Phase 4 offense_rating exists:
+  # career-to-date points per 60 in our data, shrunk toward the position average by this many minutes.
+  offense_proxy_prior_minutes: 300
+
+promotion:
+  # "Double-shift / in-game promotion": late-game (P3 + OT) share with the 1C or top line
+  # minus the P1 share must exceed this...
+  threshold: 0.25
+  # ...in at least this many of the player's last N games.
+  min_games: 3
+  of_last: 5
+  # Seconds of 5v5 TOI needed in P1 and in the late window for a game to count.
+  min_period_seconds: 60
+
+opportunity_delta:
+  recent_games: 5
+  prior_games: 20
+  min_prior_games: 5
+  # Weighted z-score of (recent - prior) per input. pp_toi_share is weighted highest.
+  weights:
+    pp_toi_share: 3.0
+    pp1_rate: 1.5
+    ev_toi_share: 2.0
+    with_1c_share: 1.0
+    top_line_rate: 1.5
+    linemate_quality: 1.0
+  pickup_threshold: 1.25
+  downgrade_threshold: -1.25
+  # An input is named in the alert text once its |z| reaches this.
+  reason_min_z: 1.0
+
+talent:
+  # Weight per season by seasons ago: in-progress season, last season, 2 ago, 3 ago (SPEC 6: 3:2:1,
+  # with the in-progress season counted like last season so a few October games don't drop a year).
+  season_weights: [3, 3, 2, 1]
+  # Regression to the position-group (F / D) average: prior worth this many minutes of ice time.
+  prior_minutes:
+    ixg: { ev: 300, pp: 120, sh: 120 }
+    on_ice_gf: { ev: 400, pp: 150, sh: 150 }
+    shots: { ev: 150, pp: 60, sh: 60 }
+    peripherals: 100
+  # Finishing (goals / ixG) regressed toward the position average, prior worth this many xG.
+  finishing_prior_xg: 25
+  # Share of on-ice goals a player assists on; secondary assists are noisier, so regressed harder.
+  ipp_prior_goals: { a1: 30, a2: 60 }
+  # offense_rating = points/60 at a reference deployment: this mix of EV and PP time.
+  offense_mix: { ev: 0.85, pp: 0.15 }
+
+projection:
+  toi_recent_games: 10
+  toi_recent_weight: 0.6
+  # Share of team games a player is expected to play, regressed toward this prior.
+  availability_prior: 0.9
+  availability_prior_games: 10
+  # Opponent goals-against and shots-against per game, regressed with this many league-average games.
+  opponent_prior_games: 20
+  simulations: 2000
+  # Players need this many NHL games in the weighted window to be projected.
+  min_nhl_games: 10
+
+grades:
+  # Percentile (within fantasy position) needed for each letter.
+  letters:
+    - [97, "A+"]
+    - [90, "A"]
+    - [85, "A-"]
+    - [78, "B+"]
+    - [70, "B"]
+    - [62, "B-"]
+    - [54, "C+"]
+    - [46, "C"]
+    - [38, "C-"]
+    - [30, "D+"]
+    - [22, "D"]
+    - [14, "D-"]
+    - [0, "F"]
+  # Opportunity Grade: weighted z-scores of the latest L10 deployment metrics (SPEC 5.4).
+  opportunity_weights:
+    ev_toi_share: 2.0
+    pp_toi_share: 3.0
+    pp1_rate: 1.5
+    top_line_rate: 1.5
+    with_1c_share: 1.0
+    linemate_quality: 1.0
+    oz_fo_share: 0.5
+  # Opportunity Delta beyond ± this shows a trend arrow.
+  trend_threshold: 0.5
+  # Mismatch callouts use percentiles: high >= high, low <= low.
+  mismatch: { high: 75, low: 40 }

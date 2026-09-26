@@ -10,7 +10,21 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "ingest:all": "tsx scripts/ingest.ts --all",
+    "ingest:season": "tsx scripts/ingest.ts",
+    "ingest:yesterday": "tsx scripts/ingest.ts --current",
+    "check:phase1": "tsx scripts/check-phase1.ts",
+    "build:derived": "tsx scripts/build-derived.ts",
+    "check:phase2": "tsx scripts/check-phase2.ts",
+    "build:deployment": "tsx scripts/build-deployment.ts",
+    "lines": "tsx scripts/show-lines.ts",
+    "alerts": "tsx scripts/show-alerts.ts",
+    "run:models": "tsx scripts/run-models.ts",
+    "rankings": "tsx scripts/rankings.ts",
+    "check:phase4": "tsx scripts/check-phase4.ts",
+    "rebuild:all": "npm run ingest:all && npm run build:derived -- --rebuild && npm run build:deployment && npm run run:models"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.21.0",
