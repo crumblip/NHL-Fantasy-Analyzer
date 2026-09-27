@@ -406,6 +406,79 @@ function migrateTables(db: Database.Database) {
       PRIMARY KEY (player_id, as_of_date)
     );
 
+    -- Prospect model inputs (Phase 6). Every pick since 2005, from the NHL records site.
+    CREATE TABLE IF NOT EXISTS draft_picks (
+      draft_year INTEGER NOT NULL,
+      overall INTEGER NOT NULL,
+      round INTEGER NOT NULL,
+      pick_in_round INTEGER,
+      player_id INTEGER,
+      player_name TEXT,
+      team TEXT,
+      position TEXT,
+      amateur_league TEXT,
+      amateur_club TEXT,
+      birth_date TEXT,
+      height_in INTEGER,
+      weight_lb INTEGER,
+      PRIMARY KEY (draft_year, overall)
+    );
+    CREATE INDEX IF NOT EXISTS draft_picks_player ON draft_picks(player_id);
+
+    -- NHL regular-season totals per skater per season since 2005-06 (outcomes for the prospect model).
+    CREATE TABLE IF NOT EXISTS nhl_skater_seasons (
+      player_id INTEGER NOT NULL,
+      season INTEGER NOT NULL,
+      position TEXT,
+      gp INTEGER NOT NULL,
+      g INTEGER NOT NULL,
+      a INTEGER NOT NULL,
+      pts INTEGER NOT NULL,
+      pim INTEGER NOT NULL,
+      ppp INTEGER NOT NULL,
+      shp INTEGER NOT NULL,
+      sog INTEGER NOT NULL,
+      hit INTEGER,
+      blk INTEGER,
+      toi_per_game REAL,
+      PRIMARY KEY (player_id, season)
+    );
+
+    -- NHLe league translation factors (SPEC 10.2) with 90% bootstrap intervals.
+    CREATE TABLE IF NOT EXISTS league_factors (
+      league TEXT PRIMARY KEY,
+      factor REAL NOT NULL,
+      ci_low REAL, ci_high REAL,
+      observations INTEGER NOT NULL,
+      direct_to_nhl INTEGER NOT NULL,
+      fitted_through INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS age_curve (
+      position_group TEXT NOT NULL,
+      age INTEGER NOT NULL,
+      log_growth REAL NOT NULL,        -- expected log change in NHLe PPG from this age to the next
+      PRIMARY KEY (position_group, age)
+    );
+
+    CREATE TABLE IF NOT EXISTS prospect_outputs (
+      player_id INTEGER NOT NULL,
+      as_of_date TEXT NOT NULL,
+      snapshot_season INTEGER NOT NULL,
+      age REAL NOT NULL,
+      position TEXT NOT NULL,
+      draft_year INTEGER, draft_overall INTEGER,
+      league TEXT,                      -- main league of the snapshot season
+      nhle_ppg REAL,                    -- league-translated PPG in the snapshot season
+      peak_nhle_ppg REAL,               -- projected to peak age along the age curve
+      p_regular REAL, p_peak50 REAL, p_peak70 REAL,
+      median_peak_fpg REAL, expected_peak_fpg REAL,
+      risk_iqr REAL, risk TEXT,
+      pctl REAL, grade TEXT,
+      comparables TEXT,                 -- JSON
+      PRIMARY KEY (player_id, as_of_date)
+    );
+
     -- Fitted model parameters and their evaluation (Phase 4+).
     CREATE TABLE IF NOT EXISTS model_params (
       name TEXT PRIMARY KEY,

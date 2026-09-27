@@ -72,6 +72,23 @@ export interface ModelConfig {
     min_nhl_games: number;
     simulations: number;
   };
+  prospects: {
+    min_gp: number;
+    min_league_obs: number;
+    bootstrap: number;
+    peak_age: number;
+    snapshot_min_gp: number;
+    comparables: number;
+    maturity_years: number;
+    regular_gp: number;
+    peak_season_min_gp: number;
+    feature_weights: Record<
+      "peak_nhle" | "blended_nhle" | "trajectory" | "goal_share" | "height" | "weight" | "draft_slot",
+      number
+    >;
+    backtest_train_last_draft: number;
+    backtest_eval_drafts: number[];
+  };
   grades: {
     letters: [number, string][];
     opportunity_weights: Record<string, number>;

@@ -267,7 +267,12 @@ export async function ingestPlayers(seasonIds: number[]) {
     )
     .all(...seasonIds, ...seasonIds)
     .map((r: any) => r.player_id as number);
+  await ingestLandings(ids);
+}
 
+/** Landing pages (bio, headshot, draft, all-league season totals) for any list of players. */
+export async function ingestLandings(ids: number[], label = "player landings") {
+  const db = getDb();
   const upsertPlayer = db.prepare(`
     INSERT INTO players (id, first_name, last_name, full_name, position, shoots, birth_date, birth_city,
       birth_country, height_in, weight_lb, headshot_url, sweater_number, current_team, is_active,
@@ -289,7 +294,7 @@ export async function ingestPlayers(seasonIds: number[]) {
     VALUES (@player_id, @season, @game_type, @league, @sequence, @team, @gp, @g, @a, @pts, @pim)`);
 
   let missing = 0;
-  const tick = progress("player landings", ids.length);
+  const tick = progress(label, ids.length);
   await pool(ids, 2, async (id) => {
     try {
       const landing = await fetchJson<PlayerLanding>(endpoints.playerLanding(id), {

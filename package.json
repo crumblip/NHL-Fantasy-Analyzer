@@ -26,6 +26,10 @@
     "check:phase4": "tsx scripts/check-phase4.ts",
     "goalies": "tsx scripts/goalies.ts",
     "check:phase5": "tsx scripts/check-phase5.ts",
+    "ingest:prospects": "tsx scripts/ingest-prospects.ts",
+    "run:prospects": "tsx scripts/run-prospects.ts",
+    "prospects": "tsx scripts/prospects.ts",
+    "check:phase6": "tsx scripts/check-phase6.ts",
     "rebuild:all": "npm run ingest:all && npm run build:derived -- --rebuild && npm run build:deployment && npm run run:models"
   },
   "dependencies": {
@@ -37,6 +41,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
+    "server-only": "^0.0.1",
     "yaml": "^2.8.0"
   },
   "devDependencies": {

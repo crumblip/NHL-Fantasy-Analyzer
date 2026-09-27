@@ -88,6 +88,34 @@ goalie:
   min_nhl_games: 5
   simulations: 4000
 
+prospects:
+  # League translation (NHLe) fit: seasons need this many GP, leagues this many linked seasons.
+  min_gp: 20
+  min_league_obs: 30
+  bootstrap: 50
+  # Production is projected along the age curve up to this age (no decline modeled after it).
+  peak_age: 25
+  # A season needs this many GP (in leagues with a factor) to be a prospect snapshot.
+  snapshot_min_gp: 15
+  comparables: 25
+  # Historical comparables must be at least this many years past their draft (outcomes mature).
+  maturity_years: 8
+  regular_gp: 200
+  # Peak fantasy PPG only counts NHL seasons with at least this many GP.
+  peak_season_min_gp: 40
+  # Similarity weights on standardized features. Draft slot is a light prior, not the driver.
+  feature_weights:
+    peak_nhle: 3.0
+    blended_nhle: 2.0
+    trajectory: 0.5
+    goal_share: 0.75
+    height: 0.5
+    weight: 0.5
+    draft_slot: 1.0
+  # SPEC 10.8: fit on drafts up to this year, evaluate on these later drafts.
+  backtest_train_last_draft: 2015
+  backtest_eval_drafts: [2016, 2017, 2018]
+
 grades:
   # Percentile (within fantasy position) needed for each letter.
   letters:

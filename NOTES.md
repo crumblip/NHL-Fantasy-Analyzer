@@ -157,6 +157,59 @@ Well calibrated through the middle. It **over-predicts the most dangerous decile
 - Per start: GA 2.78 predicted vs 2.86 actual, FP 4.22 vs 3.98. Most of the FP gap is that half-season running cold: shutouts fell to 3.8% (history 5.4–5.7%) and saves dropped from 24.5 to 23.9 per start after New Year's.
 - Goalies with 15+ later starts (43): the model's FP/start **RMSE is 0.73 vs 0.92** for each goalie's season-to-date average. Correlation with actual is ~0 for the model and 0.18 for season-to-date. With ~25 starts each, results are mostly noise; the model wins on error by not chasing hot and cold runs.
 
+## Prospect model (Phase 6)
+
+**Data** (`npm run ingest:prospects`, ~55 min the first time):
+- Every draft pick 2005–2026 (4,765) from the NHL records site, `records.nhl.com/site/api/draft`. The web API's `/v1/draft/picks/{year}/all` has names but **no player IDs**.
+- NHL season totals 2005-06 → 2025-26 from the Stats API `skater/summary` (G, A, PPP, SHP, SOG, PIM) plus `skater/realtime` (hits, blocks). One request each per season; hits and blocks start in 2005-06.
+- Landing pages for all 4,252 drafted skaters, including the ones who never made the NHL, so comparables include busts (no survivorship bias).
+
+**League translation (NHLe)** is a network fit in `lib/prospects/leagues.ts`:
+- Every pair of seasons in the same player's career gives `log PPG(to) − log PPG(from) = log f(from) − log f(to) + growth(age)`, with f(NHL) = 1. Pairs are consecutive seasons, or two leagues in the same season (no growth term).
+- Weighted least squares, weight ≈ 1/(1/pts₁ + 1/pts₂). Leagues need 30+ linked seasons. 90% intervals come from 50 bootstrap resamples of players.
+- Leagues that rarely send players straight to the NHL are pinned down through the AHL and everything else. For example, USHL (2 direct jumps to the NHL) and J20 Nationell (0) still get tight intervals.
+- 165 leagues on data through 2025-26: AHL 0.479, KHL 0.605, SHL 0.503, NL 0.455, Czechia 0.435, Liiga 0.396, DEL 0.361, NCAA 0.268, ECHL 0.234, OHL 0.167, WHL 0.158, USHL 0.155, QMJHL 0.144, J20 Nationell 0.100. Full table: `npm run check:phase6`.
+- Junior factors are lower than classic published NHLe (~0.30 for the OHL) **on purpose**. Classic NHLe folds a year of development into the factor. Here development is a separate age term.
+- Renamed leagues are merged: Sweden → SHL; SEL, J20 SuperElit and U20 Nationell → J20 Nationell; SM-liiga/Finland → Liiga; NLA/Swiss → NL; Russia → KHL. International tournaments have no factor (they fail the 20-GP minimum) and are ignored.
+
+**Age curve**, the expected log change in translated PPG from one age to the next, fit jointly with the factors. F / D:
+- 16→17: +57 / +66%
+- 17→18: +40 / +44%
+- 18→19: +24 / +31%
+- 19→20: +20 / +18%
+- 20→21: +15 / +10%
+- flat by 24–25
+
+"Peak NHLe" = the season's translated PPG × the growth still ahead to age 25. That's how production at 17 outweighs the same production at 20.
+
+**Comparables:**
+- The 25 nearest drafted skaters in the same position group at the same age, using only seasons before they reached 82 NHL games.
+- They must be 8+ years past their draft so outcomes have matured (drafts ≤ 2018 as of 2026).
+- Features, standardized within group and age: peak NHLe (weight 3), GP-weighted 2-season blend (2), draft slot (1), goal share (0.75), height and weight (0.5 each), year-over-year trajectory (0.5).
+
+**Outcomes:**
+- Career NHL GP.
+- Peak single-season points.
+- Peak fantasy PPG under league.yaml: seasons with 40+ GP; hat tricks estimated from a Poisson on G/GP; DEF bonus for defensemen.
+- Grade = percentile of expected peak FP/GP (busts count as 0) across the board. Risk = tercile of the comps' IQR.
+
+**Backtest** (SPEC 10.8): factors fitted on seasons through 2015-16, comparables from drafts ≤ 2015, each 2016–2018 pick predicted from his draft-year season.
+- 491 evaluated. 84 had no usable draft-year season (under 15 GP in leagues with a factor).
+- Rank correlation with actual peak FP/GP: **model 0.540 vs draft position 0.563 overall; within the first round, model 0.525 vs draft 0.451.** The model beats the draft where fantasy decisions are made; across all rounds the draft's scouting information still edges it.
+  - Raising the draft-slot weight to 2 or 3 didn't help (0.535 / 0.538), so it stays a light prior as the SPEC asks.
+- P(200+ GP): predicted 28.1% vs actual 22.8%. Some of the gap is censoring (2016–18 draftees are still adding games). Brier 0.120 vs 0.176 for the base rate.
+
+## Web app (Phase 7)
+
+- Next.js App Router. Server components read SQLite through `lib/queries.ts`; pages are client views with Chakra.
+- Pages: `/rankings`, `/player/[id]`, `/alerts`, `/goalies`, `/teams`, `/teams/[abbrev]?span=game|5|season`, `/prospects`, plus header search (`/api/search`).
+- The rostered filter is a manual star per player saved in `localStorage` (SPEC 11: "a manual toggle for now").
+- Charts are hand-built SVG:
+  - Fantasy-points bars and the deployment trend lines, both with hover tooltips.
+  - Series colors are the reference palette's first three slots, validated for color-blind separation on this app's light (#FFFFFF) and dark (#151A21) card surfaces.
+  - The light aqua is under 3:1 contrast, so lines are direct-labeled and there's a legend.
+- **Chakra quirk:** Chakra caches compiled styles regardless of prop order. If the server first sees `color="…" fontSize="xs"` and the browser sees `fontSize="xs" color="…"`, the class hashes differ and React logs a hydration mismatch. Write style props in a consistent order (size before color).
+
 ## Season calendar (as of 2026-09-26)
 
 - 2026-27 is in preseason. Regular season runs 2026-10 → 2027-04-10, so it has no finished regular-season games yet. `npm run ingest:yesterday` picks them up once play starts.

@@ -9,7 +9,7 @@ export interface LogitModel {
 const sigmoid = (z: number) => 1 / (1 + Math.exp(-z));
 
 /** Solves A x = b for a small symmetric positive-definite A (Gaussian elimination, partial pivoting). */
-function solve(A: number[][], b: number[]): number[] {
+export function solve(A: number[][], b: number[]): number[] {
   const n = b.length;
   const M = A.map((row, i) => [...row, b[i]]);
   for (let c = 0; c < n; c++) {
