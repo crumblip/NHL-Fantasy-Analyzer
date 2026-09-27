@@ -210,6 +210,22 @@ Well calibrated through the middle. It **over-predicts the most dangerous decile
   - The light aqua is under 3:1 contrast, so lines are direct-labeled and there's a legend.
 - **Chakra quirk:** Chakra caches compiled styles regardless of prop order. If the server first sees `color="…" fontSize="xs"` and the browser sees `fontSize="xs" color="…"`, the class hashes differ and React logs a hydration mismatch. Write style props in a consistent order (size before color).
 
+## Nightly job and alert feed (Phase 8)
+
+`npm run nightly` (logs to `data/logs/nightly-<date>.log`, records each run in `job_runs`). Steps:
+1. **Ingest** the current season. Only new `OFF` games are fetched; schedules and rosters refresh on TTL.
+2. **Derived tables** for new games only.
+3. **xG:** new shots are scored with the stored model. The model retrains when it's 7+ days old (`jobs.xg_retrain_days`).
+4. **Deployment and alerts** for the current season, then new entries appended to the alert feed.
+5. **Projections and grades** (skaters and goalies) as of today's local date.
+6. **Prospects** weekly (`jobs.prospects_refresh_days`): this year's and last year's drafts, the last two NHL seasons' totals, landing pages of the last 7 drafts' players, then the prospect model.
+
+- Every step runs even if an earlier one failed, and the run is marked `partial`. A lock file (`data/nightly.lock`, stale after 6h or when its process is gone) stops runs overlapping.
+- A preseason run takes ~45s. A simulated in-season night (3 games) rebuilt the games, scored 270 new shots and restored exactly the 10 missing feed entries. A second run added nothing (idempotent).
+- **Alert feed** (`alert_feed`): an alert enters the feed the first time it fires for a player and type, and again only after 14 days (`jobs.feed_cooldown_days`). That's ~600 entries per season, about 3 a day. It's built deterministically from `opportunity_signal`, so `npm run feed:rebuild` recreates it at any time.
+- **Scheduling (Windows):** `powershell -ExecutionPolicy Bypass -File scripts\register-nightly.ps1 -Time 06:30` registers a daily task for the current user. `StartWhenAvailable` catches up if the PC was off or asleep. Remove it with `Unregister-ScheduledTask -TaskName "NHL Fantasy Analyzer nightly" -Confirm:$false`.
+- The app header shows when the last run finished and its status. Hover for per-step results. The Alerts page starts with the feed; dates newer than your last visit are marked "New" (per browser).
+
 ## Season calendar (as of 2026-09-26)
 
 - 2026-27 is in preseason. Regular season runs 2026-10 → 2027-04-10, so it has no finished regular-season games yet. `npm run ingest:yesterday` picks them up once play starts.

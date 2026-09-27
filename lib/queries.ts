@@ -371,6 +371,54 @@ export function getPlayer(id: number) {
 }
 export type PlayerData = NonNullable<ReturnType<typeof getPlayer>>;
 
+// ---------------------------------------------------------------- nightly job & feed
+
+export interface LastRun {
+  status: string;
+  finishedAt: string | null;
+  startedAt: string;
+  steps: { step: string; status: string; detail: string }[];
+}
+
+export function getLastRun(): LastRun | null {
+  const r = db()
+    .prepare("SELECT started_at, finished_at, status, summary FROM job_runs WHERE job = 'nightly' ORDER BY id DESC LIMIT 1")
+    .get() as { started_at: string; finished_at: string | null; status: string; summary: string | null } | undefined;
+  if (!r) return null;
+  return {
+    status: r.status,
+    startedAt: r.started_at,
+    finishedAt: r.finished_at,
+    steps: r.summary ? (JSON.parse(r.summary) as LastRun["steps"]).map((s) => ({ step: s.step, status: s.status, detail: s.detail.split("\n")[0] })) : [],
+  };
+}
+
+export function getAlertFeed(limit = 60) {
+  const gradeDate = latest("model_outputs");
+  return db()
+    .prepare(
+      `SELECT f.player_id id, COALESCE(p.full_name, '#' || f.player_id) name, t.abbrev team, f.position, f.type,
+         f.as_of_date date, f.delta, f.text, m.fantasy_grade grade, m.fantasy_pctl gradePctl
+       FROM alert_feed f LEFT JOIN players p ON p.id = f.player_id LEFT JOIN teams t ON t.id = f.team_id
+       LEFT JOIN model_outputs m ON m.player_id = f.player_id AND m.as_of_date = ?
+       ORDER BY f.as_of_date DESC, ABS(COALESCE(f.delta, 0)) DESC LIMIT ?`
+    )
+    .all(gradeDate, limit) as FeedRow[];
+}
+
+export interface FeedRow {
+  id: number;
+  name: string;
+  team: string | null;
+  position: string | null;
+  type: "pickup" | "downgrade" | "promotion";
+  date: string;
+  delta: number | null;
+  text: string | null;
+  grade: string | null;
+  gradePctl: number | null;
+}
+
 // ---------------------------------------------------------------- search
 
 export function searchPlayers(q: string) {

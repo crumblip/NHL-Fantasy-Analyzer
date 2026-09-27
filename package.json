@@ -30,6 +30,8 @@
     "run:prospects": "tsx scripts/run-prospects.ts",
     "prospects": "tsx scripts/prospects.ts",
     "check:phase6": "tsx scripts/check-phase6.ts",
+    "nightly": "tsx scripts/nightly.ts",
+    "feed:rebuild": "tsx scripts/rebuild-feed.ts",
     "rebuild:all": "npm run ingest:all && npm run build:derived -- --rebuild && npm run build:deployment && npm run run:models"
   },
   "dependencies": {

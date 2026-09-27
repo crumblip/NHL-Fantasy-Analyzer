@@ -116,6 +116,14 @@ prospects:
   backtest_train_last_draft: 2015
   backtest_eval_drafts: [2016, 2017, 2018]
 
+jobs:
+  # An alert for the same player and type only re-enters the feed after this many days.
+  feed_cooldown_days: 14
+  # Nightly retrains xG and refreshes prospects when they're older than this; otherwise it just
+  # scores new shots with the current xG model.
+  xg_retrain_days: 7
+  prospects_refresh_days: 7
+
 grades:
   # Percentile (within fantasy position) needed for each letter.
   letters:

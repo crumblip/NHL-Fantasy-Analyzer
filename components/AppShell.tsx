@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Box, Flex, IconButton, Input, Text } from "@chakra-ui/react";
 import { useTheme } from "next-themes";
 import { LuMoon, LuSearch, LuSun } from "react-icons/lu";
+import type { LastRun } from "@/lib/queries";
 
 const NAV = [
   { href: "/rankings", label: "Rankings" },
@@ -105,7 +106,29 @@ function PlayerSearch() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+/** When the nightly job last ran. Formatted after mount so server and browser time zones can't disagree. */
+function DataStatus({ lastRun }: { lastRun: LastRun | null }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lastRun) return;
+    const when = new Date(`${(lastRun.finishedAt ?? lastRun.startedAt).replace(" ", "T")}Z`);
+    setLabel(when.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }));
+  }, [lastRun]);
+  if (!lastRun || !label) return null;
+  const tone = lastRun.status === "ok" ? "rink.pos" : lastRun.status === "running" ? "rink.warn" : "rink.neg";
+  const word = lastRun.status === "ok" ? "Updated" : lastRun.status === "running" ? "Updating since" : lastRun.status === "partial" ? "Partly updated" : "Update failed";
+  const details = lastRun.steps.map((s) => `${s.step}: ${s.status}${s.status === "failed" ? ` (${s.detail})` : ""}`).join("\n");
+  return (
+    <Flex align="center" gap="1.5" display={{ base: "none", lg: "flex" }} title={details} aria-label={`${word} ${label}`}>
+      <Box w="7px" h="7px" rounded="full" bg={tone} />
+      <Text fontSize="xs" color="rink.muted" whiteSpace="nowrap">
+        {word} {label}
+      </Text>
+    </Flex>
+  );
+}
+
+export function AppShell({ children, lastRun }: { children: React.ReactNode; lastRun: LastRun | null }) {
   const path = usePathname();
   return (
     <Box minH="100vh">
@@ -139,6 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </Flex>
           <Flex gap="2" align="center" ml={{ base: "auto", md: "0" }} flex={{ base: "1", md: "none" }} justify="flex-end">
+            <DataStatus lastRun={lastRun} />
             <PlayerSearch />
             <ThemeToggle />
           </Flex>

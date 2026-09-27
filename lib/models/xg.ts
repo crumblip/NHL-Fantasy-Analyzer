@@ -160,3 +160,35 @@ export function loadXgModel(): { model: LogitModel; emptyNetRate: number; penalt
   const row = getDb().prepare("SELECT params FROM model_params WHERE name = 'xg'").get() as { params: string } | undefined;
   return row ? JSON.parse(row.params) : null;
 }
+
+export function xgTrainedAt(): string | null {
+  const row = getDb().prepare("SELECT trained_at FROM model_params WHERE name = 'xg'").get() as { trained_at: string } | undefined;
+  return row?.trained_at ?? null;
+}
+
+/** Scores shots that have no xG yet (new games) with the stored model, without retraining. */
+export function scoreUnscoredShots(): number {
+  const db = getDb();
+  const p = loadXgModel();
+  if (!p) return 0;
+  const shots = db
+    .prepare(
+      `SELECT e.game_id, e.event_id, g.season, e.type, e.shot_type, e.shot_distance, e.shot_angle,
+         e.is_rebound, e.is_rush, e.strength, e.situation_code, COALESCE(e.empty_net, 0) empty_net
+       FROM events e JOIN games g ON g.id = e.game_id
+       WHERE e.type IN ('goal', 'shot-on-goal', 'missed-shot') AND e.shot_distance IS NOT NULL AND e.xg IS NULL`
+    )
+    .all() as ShotRow[];
+  const update = db.prepare("UPDATE events SET xg = ? WHERE game_id = ? AND event_id = ?");
+  db.transaction(() => {
+    for (const s of shots) {
+      const xg = s.empty_net
+        ? p.emptyNetRate
+        : PENALTY_SHOT.has(s.situation_code ?? "")
+          ? p.penaltyShotRate
+          : predictLogistic(p.model, xgFeatures(s));
+      update.run(Math.round(xg * 1e5) / 1e5, s.game_id, s.event_id);
+    }
+  })();
+  return shots.length;
+}

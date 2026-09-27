@@ -89,6 +89,11 @@ export interface ModelConfig {
     backtest_train_last_draft: number;
     backtest_eval_drafts: number[];
   };
+  jobs: {
+    feed_cooldown_days: number;
+    xg_retrain_days: number;
+    prospects_refresh_days: number;
+  };
   grades: {
     letters: [number, string][];
     opportunity_weights: Record<string, number>;

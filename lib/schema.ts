@@ -479,6 +479,31 @@ function migrateTables(db: Database.Database) {
       PRIMARY KEY (player_id, as_of_date)
     );
 
+    -- Alert feed (Phase 8): new alerts as they fire, not just the current state. One row per
+    -- player, type and signal date; a cooldown keeps an ongoing alert from re-firing every game.
+    CREATE TABLE IF NOT EXISTS alert_feed (
+      player_id INTEGER NOT NULL,
+      type TEXT NOT NULL,               -- pickup | downgrade | promotion
+      as_of_date TEXT NOT NULL,         -- date of the game that triggered it
+      season INTEGER NOT NULL,
+      team_id INTEGER,
+      position TEXT,
+      delta REAL,
+      text TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (player_id, type, as_of_date)
+    );
+    CREATE INDEX IF NOT EXISTS alert_feed_date ON alert_feed(as_of_date);
+
+    CREATE TABLE IF NOT EXISTS job_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      job TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      finished_at TEXT,
+      status TEXT NOT NULL,             -- running | ok | partial | failed
+      summary TEXT                      -- JSON: per-step status, timing and counts
+    );
+
     -- Fitted model parameters and their evaluation (Phase 4+).
     CREATE TABLE IF NOT EXISTS model_params (
       name TEXT PRIMARY KEY,
