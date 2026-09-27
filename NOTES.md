@@ -134,6 +134,29 @@ Well calibrated through the middle. It **over-predicts the most dangerous decile
 - **Fantasy Grade** ranks rest-of-season expected FP (FP/GP × expected games). Before the season that's mostly FP/GP × availability, so injury-hit stars (e.g. Matthews) rank a bit below their per-game value. VOR uses the (12 teams × starting slots)-th best FP/GP; UTIL isn't counted yet.
 - **1C selection** in the deployment engine now weights 5v5 TOI by the as-of offense proxy (SPEC 5.3).
 
+## Goalie model (Phase 5)
+
+- **Team context** is keyed by franchise, because team IDs change (Utah Hockey Club 59 → Utah Mammoth 68; Arizona 53 → Utah). Rates use the current season at weight 1.0 and the previous one at 0.5, regressed toward league with 20 games:
+  - unblocked shots for and against per game
+  - xG per shot for and against
+  - team finishing (goals ÷ xG on shots at a goalie, regressed with 100 xG)
+- **Per start:** both teams get the same model. Expected goals = shot volume (offense × defense) × xG per shot (offense × defense) × the shooting team's finishing − the goalie in net's saves above expected per shot. The opponent's goalie is the start-probability-weighted average of its goalies. Home ice is √(home goals ÷ away goals).
+  - An earlier version used raw goals-for vs xG-based goals-against. Goals-for includes empty-net goals, so win odds came out +3 points too high.
+- **Scorelines** are two Poissons with the diagonal rescaled so regulation ties hit the real rate (~22.5%; independent Poissons give ~13%). Ties split 50/50 in OT/shootout. A 0-0 shootout win counts as a shutout.
+- **Saves** are scaled by the starter's historical share of his team's saves (97.6%; starters get pulled or relieved).
+- **Shutouts** are scaled by observed ÷ model rate at league-average scoring. It's ~1.0 historically, since starter shutout rates were 5.4% / 5.7% / 4.2% by season.
+- **Quality** = goals saved above expected per unblocked shot faced, weighted 3/3/2/1 by season, regressed toward 0 with a 3,000-shot prior.
+- **Start share** = 0.5 × the team's last 10 games + 0.5 × the latest season, normalized across the team's goalies. A goalie who changed teams brings his old team's share and then gets normalized.
+  - Back-to-backs, learned from data: the primary goalie starts the second night ×0.54 as often as other nights, backups ×1.83.
+- **Weekly value** = Σ over the week's games of P(start) × expected FP. Before the season starts, the "week" is opening week.
+
+**Backtest** (`npm run check:phase5`): projected as of 2025-12-31, scored on the rest of 2025-26.
+- Most-likely starter was right 56.8% of the time. The actual starter was in the projected pool 94.6% of the time. Start probabilities are slightly overconfident: predicted 70% → actual 64%.
+- Win probability: Brier 0.2465 vs 0.2500 for a constant (1.4% better).
+  - As a separate check, the team model alone scored 1.9% better as of 2025-12-31 and 1.5% as of 2024-12-31. A goals-based rating did better in 2024-25 and worse in 2025-26. Single-game NHL prediction tops out at a few percent, so the xG model stays.
+- Per start: GA 2.78 predicted vs 2.86 actual, FP 4.22 vs 3.98. Most of the FP gap is that half-season running cold: shutouts fell to 3.8% (history 5.4–5.7%) and saves dropped from 24.5 to 23.9 per start after New Year's.
+- Goalies with 15+ later starts (43): the model's FP/start **RMSE is 0.73 vs 0.92** for each goalie's season-to-date average. Correlation with actual is ~0 for the model and 0.18 for season-to-date. With ~25 starts each, results are mostly noise; the model wins on error by not chasing hot and cold runs.
+
 ## Season calendar (as of 2026-09-26)
 
 - 2026-27 is in preseason. Regular season runs 2026-10 → 2027-04-10, so it has no finished regular-season games yet. `npm run ingest:yesterday` picks them up once play starts.

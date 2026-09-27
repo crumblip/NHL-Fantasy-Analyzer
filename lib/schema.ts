@@ -384,6 +384,28 @@ function migrateTables(db: Database.Database) {
       PRIMARY KEY (player_id, as_of_date)
     );
 
+    -- Goalie projections and grades as of a date (SPEC 8, 9). Per-start values are averages over the
+    -- goalie's remaining games weighted by his start probability in each.
+    CREATE TABLE IF NOT EXISTS goalie_outputs (
+      player_id INTEGER NOT NULL,
+      as_of_date TEXT NOT NULL,
+      season INTEGER NOT NULL,
+      team_id INTEGER,
+      gp_window INTEGER NOT NULL,
+      start_share_l10 REAL, start_share_season REAL, proj_start_share REAL,
+      gsax_raw REAL,                    -- goals saved above expected, current + last season
+      gsax_per_shot REAL,               -- weighted and regressed toward 0
+      p_win REAL, p_otl REAL, p_so REAL, proj_ga REAL, proj_sv REAL,
+      fp_per_start REAL, floor_fp REAL, ceiling_fp REAL,
+      next_game_id INTEGER, next_game_p_start REAL, next_game_fp REAL,
+      week_start TEXT, week_end TEXT, week_games INTEGER, week_starts REAL, week_fp REAL,
+      games_remaining INTEGER, rest_starts REAL, rest_fp REAL,
+      fantasy_pctl REAL, fantasy_grade TEXT,
+      workload_pctl REAL, workload_grade TEXT,
+      quality_pctl REAL, quality_grade TEXT,
+      PRIMARY KEY (player_id, as_of_date)
+    );
+
     -- Fitted model parameters and their evaluation (Phase 4+).
     CREATE TABLE IF NOT EXISTS model_params (
       name TEXT PRIMARY KEY,

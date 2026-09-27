@@ -9,6 +9,7 @@ import {
   simulateRange,
   type ToiPerGame,
 } from "./project";
+import { addDays, seasonForDate, weekWindow } from "./calendar";
 import { computeTalent } from "./talent";
 
 const FANTASY_POS: Record<string, string> = { C: "C", L: "LW", R: "RW", D: "D", LW: "LW", RW: "RW" };
@@ -21,22 +22,6 @@ const OPP_METRICS = [
   "linemate_quality",
   "oz_fo_share",
 ] as const;
-
-function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Season the as-of date belongs to: the next regular-season game's season, else the latest. */
-export function seasonForDate(asOf: string): number {
-  const db = getDb();
-  const next = db
-    .prepare("SELECT season FROM games WHERE game_type = 2 AND game_date > ? ORDER BY game_date LIMIT 1")
-    .get(asOf) as { season: number } | undefined;
-  if (next) return next.season;
-  return (db.prepare("SELECT MAX(season) s FROM games").get() as { s: number }).s;
-}
 
 export function runProjections(asOf: string) {
   const db = getDb();
@@ -170,7 +155,7 @@ export function runProjections(asOf: string) {
     ).map((r) => [r.team_id, r.n])
   );
 
-  const weekEnd = addDays(asOf, 7);
+  const week = weekWindow(asOf, asOfSeason);
   type Row = Record<string, any>;
   const rows: Row[] = [];
   for (const [id, teamId] of pool) {
@@ -210,7 +195,7 @@ export function runProjections(asOf: string) {
     });
     const neutralFp = expectedPoints(neutral, isD, scoring);
     const projFpGp = perGame.length ? perGame.reduce((s, g) => s + g.fp, 0) / perGame.length : neutralFp;
-    const next7 = perGame.filter((g) => g.date <= weekEnd);
+    const next7 = perGame.filter((g) => g.date >= week.start && g.date <= week.end);
     const range = simulateRange(neutral, isD, scoring, pc.simulations, id);
 
     rows.push({

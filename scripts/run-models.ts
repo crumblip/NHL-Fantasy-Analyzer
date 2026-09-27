@@ -1,3 +1,4 @@
+import { runGoalies } from "../lib/models/goalies";
 import { runProjections } from "../lib/models/run";
 import { trainXg } from "../lib/models/xg";
 
@@ -25,4 +26,6 @@ if (!args.includes("--skip-xg")) {
 console.log(`== Projections and grades as of ${asOf}`);
 const res = runProjections(asOf);
 console.log(`  season ${res.season}: ${res.players} skaters projected`);
+const gl = runGoalies(asOf);
+console.log(`  ${gl.goalies} goalies projected (${gl.graded} graded)`);
 console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s.`);

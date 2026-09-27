@@ -60,6 +60,18 @@ export interface ModelConfig {
     simulations: number;
     min_nhl_games: number;
   };
+  goalie: {
+    team_season_weights: number[];
+    team_prior_games: number;
+    team_finishing_prior_xg: number;
+    quality_prior_shots: number;
+    start_share_recent_weight: number;
+    start_share_recent_games: number;
+    unknown_goalie_share: number;
+    ot_win_share: number;
+    min_nhl_games: number;
+    simulations: number;
+  };
   grades: {
     letters: [number, string][];
     opportunity_weights: Record<string, number>;

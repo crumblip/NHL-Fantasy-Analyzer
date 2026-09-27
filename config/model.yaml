@@ -68,6 +68,26 @@ projection:
   # Players need this many NHL games in the weighted window to be projected.
   min_nhl_games: 10
 
+goalie:
+  # Team offense/defense rates: weight of the current and previous season, and regression
+  # toward league average worth this many games.
+  team_season_weights: [1.0, 0.5]
+  team_prior_games: 20
+  # Team finishing (goals ÷ xG on shots at a goalie) regressed toward league with this many xG.
+  team_finishing_prior_xg: 100
+  # Goals saved above expected per unblocked shot, regressed hard toward 0 (goalie results are noisy).
+  quality_prior_shots: 3000
+  # Start share = this weight on the team's last N games + the rest on the season, normalized per team.
+  start_share_recent_weight: 0.5
+  start_share_recent_games: 10
+  # Raw share for a rostered goalie with no recent starts (keeps call-ups on the board).
+  unknown_goalie_share: 0.05
+  # Probability a game tied after regulation goes the goalie's way (OT or shootout).
+  ot_win_share: 0.5
+  # Goalies need this many games in the window to be graded.
+  min_nhl_games: 5
+  simulations: 4000
+
 grades:
   # Percentile (within fantasy position) needed for each letter.
   letters:
